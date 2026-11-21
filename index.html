@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kime OMS</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;700&family=Noto+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#eef4f6;--mut:#a9bec6;--gold:#f2b84b;--ok:#5fd3a0;--glass:rgba(255,255,255,.12);--line:rgba(255,255,255,.28)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--ink);font-family:'Noto Sans Sinhala','Noto Sans',sans-serif;
+background:radial-gradient(900px 600px at 10% -10%,#2e7f86 0,transparent 60%),radial-gradient(800px 600px at 100% 100%,#6a3f8f 0,transparent 55%),#0f2a3d;background-attachment:fixed}
+.wrap{max-width:980px;margin:0 auto;padding:18px}
+header{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+h1{margin:0;font-size:1.5rem;letter-spacing:.5px}h1 span{color:var(--gold)}
+.glass{background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);border-radius:18px;padding:14px}
+input,select,textarea{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.22);color:var(--ink);font:inherit}
+input::placeholder{color:var(--mut)}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:rgba(255,255,255,.14);color:var(--ink);padding:9px 14px;border-radius:12px}
+button:hover{background:rgba(255,255,255,.24)}button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.primary{background:var(--gold);color:#2a1c00;border-color:var(--gold);font-weight:700}
+.primary:hover{background:#ffc863}
+#form{display:none;margin-bottom:14px}#form.open{display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.tools{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}.tools input{flex:1;min-width:180px}
+.order{margin-bottom:12px}
+.top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.id{color:var(--mut);font-size:.8rem}.cust{font-weight:700;font-size:1.05rem}
+.badge{padding:4px 12px;border-radius:99px;font-size:.85rem;font-weight:600;border:1px solid var(--line)}
+.b0{background:rgba(255,255,255,.14)}.b1{background:rgba(90,160,255,.35)}.b2{background:rgba(120,120,255,.35)}.b3{background:rgba(242,184,75,.4)}.b4{background:rgba(190,120,255,.35)}.b5{background:rgba(95,211,160,.35)}.b6{background:var(--ok);color:#04301e}
+.steps{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.step{display:flex;align-items:center;gap:6px;font-size:.9rem}
+.step.done{background:rgba(95,211,160,.28);border-color:var(--ok)}
+.step .lock{font-size:.8rem}
+.meta{color:var(--mut);font-size:.9rem}
+.empty{text-align:center;color:var(--mut);padding:28px}
+#tPanel{display:none;margin-bottom:14px}#tPanel.open{display:block}
+.trow{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px;padding:10px 14px}
+.assign{display:flex;align-items:center;gap:8px;margin:0 0 12px;flex-wrap:wrap}.assign select{width:auto;min-width:180px}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.75);padding:10px 18px;border-radius:12px;display:none}
+@media(prefers-reduced-motion:no-preference){button{transition:background .15s}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>KIME <span>OMS</span></h1>
+  <div><button id="refresh">Refresh</button> <button id="tBtn">මහන අය</button> <button class="primary" id="newBtn">+ අලුත් ඕඩරයක්</button></div>
+</header>
+
+<div id="err" class="glass" style="display:none;margin-bottom:14px;border-color:#ff8a8a"></div>
+
+<section class="glass" id="form">
+  <div class="grid">
+    <input id="f_cust" placeholder="Customer නම">
+    <input id="f_phone" placeholder="දුරකථන">
+    <input id="f_items" placeholder="Items (උදා: Shirt x 20)">
+    <input id="f_qty" type="number" placeholder="Qty">
+    <input id="f_amt" type="number" placeholder="Amount (Rs.)">
+  </div>
+  <textarea id="f_notes" rows="2" placeholder="Notes" style="margin-top:10px"></textarea>
+  <div style="margin-top:10px"><button class="primary" id="save">ඕඩරය Save කරන්න</button> <button id="cancel">Cancel</button></div>
+</section>
+
+<section class="glass" id="tPanel">
+  <b>මහන අය (Sub-contract Tailors)</b>
+  <div class="grid" style="margin-top:10px">
+    <input id="t_name" placeholder="නම">
+    <input id="t_phone" placeholder="දුරකථන">
+    <input id="t_addr" placeholder="ලිපිනය">
+    <input id="t_rate" type="number" placeholder="Rate (Rs. / piece)">
+  </div>
+  <textarea id="t_notes" rows="2" placeholder="Notes (විශේෂත්වය, බැංකු විස්තර ආදිය)" style="margin-top:10px"></textarea>
+  <div style="margin-top:10px"><button class="primary" id="tSave">Save</button> <button id="tCancel">Clear</button></div>
+  <div id="tList" style="margin-top:12px"></div>
+</section>
+
+<div class="tools"><input id="q" placeholder="සොයන්න: නම / ID / දුරකථන"></div>
+<div id="list"></div>
+</div>
+<div id="toast"></div>
+
+<script>
+// ===== සැකසුම් =====
+const API_URL = 'https://script.google.com/macros/s/AKfycbz0knObrZnvIRGnA_lBJw9P6BxPSjCHNAo1PJSR0nbD60ClrqrtKqsdB-cXpmp2IcRO/exec';
+const CANVA_TEMPLATE_LINK = 'PASTE_YOUR_CANVA_TEMPLATE_LINK_HERE';
+const SYNC_MS = 10000;
+
+const STEPS = [
+  {f:'FabricArrived', t:'ෆැබ්රික් ගෙනාවා', s:'ෆැබ්රික් ආවා'},
+  {f:'FabricCut',     t:'ෆැබ්රික් කට් කරනවා', s:'කට් කරනවා'},
+  {f:'Sewing',        t:'ඇඳුම් ටික මහනවා', s:'මහනවා', pin:true},
+  {f:'Returned',      t:'මහලා ගෙනැල්ලා තියෙන්නේ', s:'මහලා ආවා'},
+  {f:'Packing',       t:'පැක් වෙනවා', s:'පැක් වෙනවා'},
+  {f:'ReadyToSend',   t:'යවන්න හදන්නේ', s:'යවන්න ලෑස්ති'}
+];
+let orders = [], tailors = [], busy = false, editId = null;
+const $ = id => document.getElementById(id);
+const on = v => v === true || String(v).toUpperCase() === 'TRUE';
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function showErr(m){const e=$('err');e.textContent=m;e.style.display=m?'block':'none'}
+function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',2600)}
+
+function level(o){let n=0;STEPS.forEach((s,i)=>{if(on(o[s.f]))n=i+1});return n}
+
+async function load(){
+  if(busy) return;
+  if(API_URL.includes('PASTE_')){showErr('API_URL තාම දාලා නෑ. index.html එකේ උඩින් තියෙන API_URL එකට Apps Script /exec link එක paste කරන්න.');return}
+  try{
+    const r = await fetch(API_URL);
+    const j = await r.json();
+    if(!j.ok) showErr('Server error: '+(j.error||'නොදන්නා දෝෂයක්'));
+    if(j.ok){showErr('');if(document.activeElement && document.activeElement.tagName==='SELECT') return;orders = j.data.reverse();tailors = j.tailors||[];render();renderTailors()}
+  }catch(e){showErr('Apps Script එකට සම්බන්ධ වෙන්න බෑ. /exec link එක හරිද, Deploy එකේ Who has access = Anyone ද, Internet තියෙනවද බලන්න.')}
+}
+
+async function send(payload){
+  const r = await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+  return r.json();
+}
+
+function render(){
+  const q = $('q').value.trim().toLowerCase();
+  const rows = orders.filter(o => !q || [o.OrderID,o.Customer,o.Phone].join(' ').toLowerCase().includes(q));
+  if(!rows.length){$('list').innerHTML='<div class="glass empty">ඕඩර් නෑ. "+ අලුත් ඕඩරයක්" එබීමෙන් පළමු ඕඩරය ඇතුළත් කරන්න.</div>';return}
+  $('list').innerHTML = rows.map(o=>{
+    const lv = level(o);
+    const badge = lv===0 ? 'අලුත් ඕඩරය' : STEPS[lv-1].s;
+    const bc = lv===STEPS.length ? 6 : lv;
+    return `<article class="glass order">
+      <div class="top">
+        <div><div class="id">${esc(o.OrderID)}</div><div class="cust">${esc(o.Customer)}</div>
+        <div class="meta">${esc(o.Phone)} • ${esc(o.Items)} • Qty ${esc(o.Qty)} • Rs. ${esc(o.Amount)}</div></div>
+        <span class="badge b${bc}">${esc(badge)}</span>
+      </div>
+      <div class="steps">${STEPS.map(s=>`<button class="step ${on(o[s.f])?'done':''}" data-id="${esc(o.OrderID)}" data-f="${s.f}">${on(o[s.f])?'✔':'○'} ${s.t}${s.pin?' <span class="lock">🔒</span>':''}</button>`).join('')}</div>
+      <div class="assign"><span class="meta">මහන්නේ:</span><select data-tailor="${esc(o.OrderID)}"><option value="">- තෝරන්න -</option>${tailors.map(t=>`<option ${t.Name===o.Tailor?'selected':''}>${esc(t.Name)}</option>`).join('')}</select></div>
+      ${o.Notes?`<div class="meta">${esc(o.Notes)}</div>`:''}
+      <button data-invoice="${esc(o.OrderID)}">Create Canva Invoice</button>
+    </article>`}).join('');
+}
+
+$('list').addEventListener('click', async e=>{
+  const inv = e.target.closest('[data-invoice]');
+  if(inv){
+    try{await navigator.clipboard.writeText(inv.dataset.invoice)}catch(_){}
+    toast('Order ID copy වුණා - Canva එක ඇරෙනවා');
+    window.open(CANVA_TEMPLATE_LINK,'_blank');return;
+  }
+  const b = e.target.closest('.step'); if(!b) return;
+  const o = orders.find(x=>x.OrderID===b.dataset.id), st = STEPS.find(s=>s.f===b.dataset.f);
+  const val = !on(o[st.f]);
+  let pin;
+  if(st.pin){pin = prompt('Admin PIN ඇතුළත් කරන්න'); if(pin===null) return}
+  busy = true;
+  try{
+    const r = await send({action:'update',id:o.OrderID,field:st.f,value:val,pin});
+    if(!r.ok){toast(r.error==='Wrong PIN'?'PIN එක වැරදියි':'Update වුණේ නෑ')}
+    else{o[st.f]=val;render()}
+  }catch(err){toast('Update වුණේ නෑ')}
+  busy = false;
+});
+
+// ===== මහන අය =====
+function renderTailors(){
+  $('tList').innerHTML = tailors.length ? tailors.map(t=>{
+    const active = orders.filter(o=>o.Tailor===t.Name && on(o.Sewing) && !on(o.Returned)).length;
+    return `<div class="glass trow"><div><b>${esc(t.Name)}</b>
+      <div class="meta">${esc(t.Phone)} • ${esc(t.Address)} • Rs. ${esc(t.Rate)} / piece • දැන් මහන ඕඩර්: ${active}</div>
+      ${t.Notes?`<div class="meta">${esc(t.Notes)}</div>`:''}</div>
+      <div><button data-tedit="${esc(t.TailorID)}">Edit</button> <button data-tdel="${esc(t.TailorID)}">Delete</button></div></div>`}).join('')
+    : '<div class="empty">තවම මහන අය නෑ. උඩ form එකෙන් එකතු කරන්න.</div>';
+}
+function clearT(){['t_name','t_phone','t_addr','t_rate','t_notes'].forEach(i=>$(i).value='');editId=null;$('tSave').textContent='Save'}
+$('tBtn').onclick = ()=>$('tPanel').classList.toggle('open');
+$('tCancel').onclick = clearT;
+$('tSave').onclick = async ()=>{
+  const d = {Name:$('t_name').value.trim(),Phone:$('t_phone').value.trim(),Address:$('t_addr').value.trim(),Rate:$('t_rate').value,Notes:$('t_notes').value.trim()};
+  if(!d.Name){toast('නම ඕනේ');return}
+  busy = true;
+  try{
+    const r = await send(editId ? {action:'updateTailor',id:editId,data:d} : {action:'addTailor',data:d});
+    if(r.ok){toast('Save වුණා');clearT()}else toast('Save වුණේ නෑ');
+  }catch(e){toast('Save වුණේ නෑ')}
+  busy = false; load();
+};
+$('tList').addEventListener('click', async e=>{
+  const ed = e.target.closest('[data-tedit]'), del = e.target.closest('[data-tdel]');
+  if(ed){
+    const t = tailors.find(x=>x.TailorID===ed.dataset.tedit); if(!t) return;
+    $('t_name').value=t.Name||'';$('t_phone').value=t.Phone||'';$('t_addr').value=t.Address||'';$('t_rate').value=t.Rate||'';$('t_notes').value=t.Notes||'';
+    editId=t.TailorID;$('tSave').textContent='Update';$('t_name').focus();
+  }
+  if(del){
+    const t = tailors.find(x=>x.TailorID===del.dataset.tdel);
+    if(!t || !confirm(t.Name+' මකන්නද?')) return;
+    const pin = prompt('Admin PIN ඇතුළත් කරන්න'); if(pin===null) return;
+    busy = true;
+    try{const r = await send({action:'deleteTailor',id:t.TailorID,pin});toast(r.ok?'මැකුවා':(r.error==='Wrong PIN'?'PIN එක වැරදියි':'Delete වුණේ නෑ'))}catch(_){toast('Delete වුණේ නෑ')}
+    busy = false; load();
+  }
+});
+$('list').addEventListener('change', async e=>{
+  const s = e.target.closest('[data-tailor]'); if(!s) return;
+  const o = orders.find(x=>x.OrderID===s.dataset.tailor); if(!o) return;
+  busy = true;
+  try{const r = await send({action:'update',id:o.OrderID,field:'Tailor',value:s.value});
+    if(r.ok){o.Tailor=s.value;renderTailors();toast('Tailor assign වුණා')}else toast('Update වුණේ නෑ')}catch(_){toast('Update වුණේ නෑ')}
+  busy = false;
+});
+
+$('newBtn').onclick = ()=>$('form').classList.toggle('open');
+$('cancel').onclick = ()=>$('form').classList.remove('open');
+$('refresh').onclick = load;
+$('q').oninput = render;
+
+$('save').onclick = async ()=>{
+  const order = {Date:new Date().toLocaleDateString('en-CA'),Customer:$('f_cust').value.trim(),Phone:$('f_phone').value.trim(),
+    Items:$('f_items').value.trim(),Qty:$('f_qty').value,Amount:$('f_amt').value,Notes:$('f_notes').value.trim()};
+  if(!order.Customer){toast('Customer නම ඕනේ');return}
+  busy = true;
+  try{
+    const r = await send({action:'add',order});
+    if(r.ok){toast('ඕඩරය Save වුණා');['f_cust','f_phone','f_items','f_qty','f_amt','f_notes'].forEach(i=>$(i).value='');$('form').classList.remove('open')}
+  }catch(e){toast('Save වුණේ නෑ')}
+  busy = false; load();
+};
+
+render(); renderTailors(); load(); setInterval(load, SYNC_MS);
+</script>
+</body>
+</html>
